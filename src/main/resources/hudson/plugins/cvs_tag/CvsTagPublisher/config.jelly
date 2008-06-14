@@ -1,0 +1,11 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+  <f:entry title="Tag Name" help="/plugin/cvs-tag/help-config-TagName.html">
+    <j:set var="tagName" value="${instance.getTagName()}"/>
+    <j:if test="${instance.getTagName() == null}">
+        <j:set var="tagName" value="${descriptor.getDefaultTagName()}"/>
+    </j:if>
+    <f:textbox name="cvstag.tagName" value="${tagName}" 
+               checkUrl="'${rootURL}/publisher/CvsTagPublisher/tagNameCheck?value='+escape(this.value)" />
+  </f:entry>
+</j:jelly>
