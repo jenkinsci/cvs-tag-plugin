@@ -9,12 +9,12 @@
   <artifactId>cvs-tag</artifactId>
   <name>Hudson CVS Tagging Plug-in</name>
   <packaging>hpi</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <developers>
     <developer>
       <name>Brendt Lucas</name>
       <email>draco2k4@yahoo.com</email>
-      <organization></organization>
+      <organization />
       <roles>
         <role>developer</role>
       </roles>
@@ -39,10 +39,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <scm>
-    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/cvs-tag-1.0</connection>
-    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/cvs-tag-1.0</developerConnection>
-    <url>https://hudson.dev.java.net/source/browse/hudson/hudson/plugins/cvs-tag/tags/cvs-tag-1.0</url>
-  </scm>
 </project>
