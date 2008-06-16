@@ -9,7 +9,7 @@
   <artifactId>cvs-tag</artifactId>
   <name>Hudson CVS Tagging Plug-in</name>
   <packaging>hpi</packaging>
-  <version>1.0</version>
+  <version>1.1-SNAPSHOT</version>
   <developers>
     <developer>
       <name>Brendt Lucas</name>
