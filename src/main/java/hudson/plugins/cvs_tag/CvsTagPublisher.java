@@ -14,6 +14,7 @@ import hudson.scm.Messages;
 import hudson.util.FormFieldValidator;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+import org.codehaus.groovy.control.CompilationFailedException;
 import net.sf.json.JSONObject;
 
 import static hudson.plugins.cvs_tag.CvsTagPlugin.CONFIG_PREFIX;
@@ -131,14 +132,29 @@ public class CvsTagPublisher extends Publisher
 					else
 					{
 						// Test to make sure the tag name is valid
-						String errorMessage = isInvalidTag(CvsTagPlugin.evalGroovyExpression(new HashMap<String, String>(), tagName));
-
-						if (errorMessage != null)
+						String s = null;
+						try
 						{
-							error(errorMessage);
+							s = CvsTagPlugin.evalGroovyExpression(new HashMap<String, String>(), tagName);
+						}
+						catch (CompilationFailedException e)
+						{
+							error("Check if quotes, braces, or brackets are balanced. " + e.getMessage());
 						}
 
-						ok();
+						if (s != null)
+						{
+							String errorMessage = isInvalidTag(s);
+
+							if (errorMessage != null)
+							{
+								error(errorMessage);
+							}
+							else
+							{
+								ok();
+							}
+						}
 					}
 				}
 			}.process();
