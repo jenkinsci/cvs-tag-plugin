@@ -10,6 +10,8 @@
   <name>Hudson CVS Tagging Plug-in</name>
   <packaging>hpi</packaging>
   <version>1.1-SNAPSHOT</version>
+  <url>http://hudson.gotdns.com/wiki/display/HUDSON/CVS+Tagging+Plugin</url>
+
   <developers>
     <developer>
       <name>Brendt Lucas</name>
