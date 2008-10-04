@@ -83,8 +83,17 @@ public class CvsTagPlugin
 
 		ArgumentListBuilder cmd = new ArgumentListBuilder();
 
-		// cvs -d cvsRoot rtag -D toDate tagName modules
-		cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot(), "rtag", "-D", date, tagName, modules);
+		if (scm.getBranch() != null)
+		{
+			// cvs -d cvsRoot rtag -r branchName -D toDate tagName modules
+			cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot(), "rtag", "-r", scm.getBranch(), "-D", date, tagName, modules);
+		}
+		else
+		{
+			// cvs -d cvsRoot rtag -D toDate tagName modules
+			cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot(), "rtag", "-D", date, tagName, modules);
+		}
+
 		logger.println("Executing tag command: " + cmd.toStringWithQuote());
 
 		File tempDir = null;
