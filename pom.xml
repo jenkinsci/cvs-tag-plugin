@@ -30,14 +30,14 @@
     <dependency>
       <groupId>org.jvnet.hudson.main</groupId>
       <artifactId>hudson-core</artifactId>
-      <version>1.224</version>
+      <version>1.253</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.jvnet.hudson.main</groupId>
       <artifactId>hudson-war</artifactId>
       <type>war</type>
-      <version>1.224</version>
+      <version>1.253</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
