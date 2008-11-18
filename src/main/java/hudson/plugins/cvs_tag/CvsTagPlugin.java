@@ -85,8 +85,8 @@ public class CvsTagPlugin
 
 		if (scm.getBranch() != null)
 		{
-			// cvs -d cvsRoot rtag -r branchName -D toDate tagName modules
-			cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot(), "rtag", "-r", scm.getBranch(), "-D", date, tagName, modules);
+			// cvs -d cvsRoot rtag -r branchName tagName modules
+			cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot(), "rtag", "-r", scm.getBranch(), tagName, modules);
 		}
 		else
 		{
