@@ -22,6 +22,15 @@
       </roles>
       <timezone>+1</timezone>
     </developer>
+    <developer>
+      <name>Derek Mahar</name>
+      <email>derek@derekmahar.ca</email>
+      <organization />
+      <roles>
+        <role>developer</role>
+      </roles>
+      <timezone>-5</timezone>
+    </developer>
   </developers>
   <dependencies>
     <!--
@@ -30,14 +39,14 @@
     <dependency>
       <groupId>org.jvnet.hudson.main</groupId>
       <artifactId>hudson-core</artifactId>
-      <version>1.253</version>
+      <version>1.262</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.jvnet.hudson.main</groupId>
       <artifactId>hudson-war</artifactId>
       <type>war</type>
-      <version>1.253</version>
+      <version>1.262</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
