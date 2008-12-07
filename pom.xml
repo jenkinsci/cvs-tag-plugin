@@ -9,7 +9,7 @@
   <artifactId>cvs-tag</artifactId>
   <name>Hudson CVS Tagging Plug-in</name>
   <packaging>hpi</packaging>
-  <version>1.4-SNAPSHOT</version>
+  <version>1.3</version>
   <url>http://hudson.gotdns.com/wiki/display/HUDSON/CVS+Tagging+Plugin</url>
 
   <developers>
@@ -67,4 +67,10 @@
       </snapshots>
     </repository>
   </repositories>
+
+  <scm>
+    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/cvs-tag-1.3</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/cvs-tag-1.3</developerConnection>
+    <url>https://hudson.dev.java.net/source/browse/hudson/hudson/plugins/cvs-tag/tags/cvs-tag-1.3</url>
+  </scm>
 </project>
