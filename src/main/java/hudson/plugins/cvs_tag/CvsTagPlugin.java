@@ -74,25 +74,25 @@ public class CvsTagPlugin
 		Map<String, String> env = build.getEnvVars();
 		tagName = evalGroovyExpression(env, tagName);
 
-		// Get the modules we will be tagging
-		String modules = arrayToString(scm.getAllModulesNormalized(), " ");
-
 		// -D option for rtag command.
 		// Tag the most recent revision no later than <date> ...
 		String date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(build.getTimestamp().getTime());
 
 		ArgumentListBuilder cmd = new ArgumentListBuilder();
+        cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot(), "rtag");
 
 		if (scm.getBranch() != null)
 		{
 			// cvs -d cvsRoot rtag -r branchName tagName modules
-			cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot(), "rtag", "-r", scm.getBranch(), tagName, modules);
+			cmd.add("-r", scm.getBranch(), tagName);
 		}
 		else
 		{
 			// cvs -d cvsRoot rtag -D toDate tagName modules
-			cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot(), "rtag", "-D", date, tagName, modules);
+			cmd.add("-D", date, tagName);
 		}
+
+        cmd.add(scm.getAllModulesNormalized());
 
 		logger.println("Executing tag command: " + cmd.toStringWithQuote());
 
