@@ -9,7 +9,6 @@ import java.util.Map;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
-import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.AbstractBuild;
@@ -48,7 +47,7 @@ public class CvsTagPlugin
 	}
 
 
-	public static boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener, String tagName)
+	public static boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener, String tagName) throws IOException, InterruptedException
 	{
 		PrintStream logger = listener.getLogger();
 
@@ -71,7 +70,7 @@ public class CvsTagPlugin
 		CVSSCM scm = CVSSCM.class.cast(rootProject.getScm());
 
 		// Evaluate the groovy tag name
-		Map<String, String> env = build.getEnvVars();
+		Map<String, String> env = build.getEnvironment(listener);
 		tagName = evalGroovyExpression(env, tagName);
 
 		// -D option for rtag command.
@@ -100,7 +99,7 @@ public class CvsTagPlugin
 		try
 		{
 			tempDir = Util.createTempDir();
-			int exitCode = launcher.launch(cmd.toCommandArray(), env, logger, new FilePath(tempDir)).join();
+			int exitCode = launcher.launch().cmds(cmd).envs(env).stdout(logger).pwd(tempDir).join();
 			if (exitCode != 0)
 			{
 				listener.fatalError(CvsTagPublisher.DESCRIPTOR.getDisplayName() + " failed. exit code=" + exitCode);

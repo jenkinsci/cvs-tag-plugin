@@ -6,17 +6,22 @@ import java.util.HashMap;
 import javax.servlet.ServletException;
 
 import hudson.tasks.Publisher;
-import hudson.model.Descriptor;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.Extension;
 import hudson.Launcher;
 import hudson.scm.Messages;
-import hudson.util.FormFieldValidator;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Notifier;
+import hudson.util.FormValidation;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.codehaus.groovy.control.CompilationFailedException;
 import net.sf.json.JSONObject;
 
+import org.kohsuke.stapler.QueryParameter;
 import static hudson.plugins.cvs_tag.CvsTagPlugin.CONFIG_PREFIX;
 import static hudson.plugins.cvs_tag.CvsTagPlugin.DESCRIPTION;
 
@@ -24,13 +29,14 @@ import static hudson.plugins.cvs_tag.CvsTagPlugin.DESCRIPTION;
 /**
  * @author Brendt Lucas
  */
-public class CvsTagPublisher extends Publisher
+public class CvsTagPublisher extends Notifier
 {
 	/**
 	 * The tag name
 	 */
 	private String tagName;
 
+	@Extension
 	public static final CvsTagDescriptorImpl DESCRIPTOR = new CvsTagDescriptorImpl();
 
 	/**
@@ -66,12 +72,18 @@ public class CvsTagPublisher extends Publisher
 		return true;
 	}
 
-	public Descriptor<Publisher> getDescriptor()
+	public BuildStepMonitor getRequiredMonitorService()
+	{
+		return BuildStepMonitor.BUILD;
+	}
+
+	@Override
+	public BuildStepDescriptor<Publisher> getDescriptor()
 	{
 		return DESCRIPTOR;
 	}
 
-	public static final class CvsTagDescriptorImpl extends Descriptor<Publisher>
+	public static final class CvsTagDescriptorImpl extends BuildStepDescriptor<Publisher>
 	{
 		private String defaultTagName;
 
@@ -98,13 +110,18 @@ public class CvsTagPublisher extends Publisher
 		}
 
 		@Override
-		public boolean configure(StaplerRequest req) throws FormException
+		public boolean configure(StaplerRequest req, JSONObject formData) throws FormException
 		{
 			 this.defaultTagName = req.getParameter(CONFIG_PREFIX + "tagName");
 
 			save();
 
-			return super.configure(req);
+			return super.configure(req, formData);
+		}
+
+		public boolean isApplicable(Class<? extends AbstractProject> jobType)
+		{
+			return true;
 		}
 
 		public String getDefaultTagName()
@@ -117,47 +134,36 @@ public class CvsTagPublisher extends Publisher
 			this.defaultTagName = defaultTagName;
 		}
 
-		public void doTagNameCheck(final StaplerRequest req, StaplerResponse resp) throws IOException, ServletException
+		public FormValidation doTagNameCheck(@QueryParameter("value") final String tagName) throws IOException, ServletException
 		{
-			new FormFieldValidator(req, resp, false)
+			if (tagName == null || tagName.length() == 0)
 			{
-				protected void check() throws IOException, ServletException
+				return FormValidation.error("Please specify a name for this tag.");
+			}
+			else
+			{
+				// Test to make sure the tag name is valid
+				String s = null;
+				try
 				{
-					String tagName = req.getParameter("value");
+					s = CvsTagPlugin.evalGroovyExpression(new HashMap<String, String>(), tagName);
+				}
+				catch (CompilationFailedException e)
+				{
+					return FormValidation.error("Check if quotes, braces, or brackets are balanced. " + e.getMessage());
+				}
 
-					if (tagName == null || tagName.length() == 0)
+				if (s != null)
+				{
+					String errorMessage = isInvalidTag(s);
+
+					if (errorMessage != null)
 					{
-						error("Please specify a name for this tag.");
-					}
-					else
-					{
-						// Test to make sure the tag name is valid
-						String s = null;
-						try
-						{
-							s = CvsTagPlugin.evalGroovyExpression(new HashMap<String, String>(), tagName);
-						}
-						catch (CompilationFailedException e)
-						{
-							error("Check if quotes, braces, or brackets are balanced. " + e.getMessage());
-						}
-
-						if (s != null)
-						{
-							String errorMessage = isInvalidTag(s);
-
-							if (errorMessage != null)
-							{
-								error(errorMessage);
-							}
-							else
-							{
-								ok();
-							}
-						}
+						return FormValidation.error(errorMessage);
 					}
 				}
-			}.process();
+			}
+			return FormValidation.ok();
 		}
 
 		/**
