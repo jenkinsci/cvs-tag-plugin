@@ -14,6 +14,7 @@
 
   <developers>
     <developer>
+      <id>draco2k8</id>
       <name>Brendt Lucas</name>
       <email>draco2k4@yahoo.com</email>
       <organization />
@@ -23,6 +24,7 @@
       <timezone>+1</timezone>
     </developer>
     <developer>
+      <id>derekmahar</id>
       <name>Derek Mahar</name>
       <email>derek@derekmahar.ca</email>
       <organization />
