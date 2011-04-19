@@ -76,30 +76,49 @@ public class CvsTagPlugin {
         String date = df.format( build.getTimestamp().getTime());
 
         ArgumentListBuilder cmd = new ArgumentListBuilder();
-        cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot(), "rtag");
+        cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot());
 
-        if (moveTag) {
-            cmd.add("-F");
+        String branch = scm.getBranch();
+        if ( branch != null)
+        {
+            // cvs -d cvsRoot tag -r branch tagName modules
+            cmd.add("tag");
+            if( moveTag )
+            {
+                cmd.add("-F");
+            }
+            cmd.add("-r",scm.getBranch(), tagName);
         }
-
-        if (scm.getBranch() != null) {
-            // cvs -d cvsRoot rtag -r branchName tagName modules
-            cmd.add("-r", scm.getBranch(), tagName);
-        } else {
-            // cvs -d cvsRoot rtag -D toDate tagName modules
+        else
+        {
+            // cvs -d cvsRoot rtag -D date tagName modules
+            cmd.add("rtag");
+            if( moveTag )
+            {
+                cmd.add("-F");
+            }
             cmd.add("-D", date, tagName);
         }
 
-        cmd.add(scm.getAllModulesNormalized());
+
+        String[] modulesNormalized = scm.getAllModulesNormalized();
+        if( branch == null || scm.isLegacy() || modulesNormalized.length > 1 )
+        {
+            cmd.add(scm.getAllModulesNormalized());
+        }
 
         logger.println("Executing tag command: " + cmd.toStringWithQuote());
+        FilePath workingDir = build.getWorkspace();
+        if( branch == null )
+        {
+            workingDir = build.getWorkspace().createTempDir("jenkins-cvs-tag","");
+        }
 
-        FilePath tempDir = null;
         try {
-            tempDir = build.getWorkspace().createTempDir("jenkins-cvs-tag","");
-            int exitCode = launcher.launch().cmds(cmd).envs(env).stdout(logger).pwd(tempDir).join();
+            int exitCode = launcher.launch().cmds(cmd).envs(env).stdout(logger).pwd(workingDir).join();
             if (exitCode != 0) {
                 listener.fatalError(CvsTagPublisher.DESCRIPTOR.getDisplayName() + " failed. exit code=" + exitCode);
+                build.setResult(Result.UNSTABLE);
             }
         } catch (IOException e) {
             e.printStackTrace(listener.error(e.getMessage()));
@@ -111,9 +130,10 @@ public class CvsTagPlugin {
             return false;
         } finally {
             try {
-                if (tempDir != null) {
-                    logger.println("cleaning up " + tempDir);
-                   tempDir.deleteRecursive();
+                if ( !workingDir.equals(build.getWorkspace()) )
+                {
+                    logger.println("cleaning up " + workingDir);
+                    workingDir.deleteRecursive();
                 }
             } catch (IOException e) {
                 e.printStackTrace(listener.error(e.getMessage()));
