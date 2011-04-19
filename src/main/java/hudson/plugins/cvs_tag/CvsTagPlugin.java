@@ -12,6 +12,7 @@ import java.util.TimeZone;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.AbstractBuild;
@@ -93,9 +94,9 @@ public class CvsTagPlugin {
 
         logger.println("Executing tag command: " + cmd.toStringWithQuote());
 
-        File tempDir = null;
+        FilePath tempDir = null;
         try {
-            tempDir = Util.createTempDir();
+            tempDir = build.getWorkspace().createTempDir("jenkins-cvs-tag","");
             int exitCode = launcher.launch().cmds(cmd).envs(env).stdout(logger).pwd(tempDir).join();
             if (exitCode != 0) {
                 listener.fatalError(CvsTagPublisher.DESCRIPTOR.getDisplayName() + " failed. exit code=" + exitCode);
@@ -112,7 +113,7 @@ public class CvsTagPlugin {
             try {
                 if (tempDir != null) {
                     logger.println("cleaning up " + tempDir);
-                    Util.deleteRecursive(tempDir);
+                   tempDir.deleteRecursive();
                 }
             } catch (IOException e) {
                 e.printStackTrace(listener.error(e.getMessage()));
