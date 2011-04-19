@@ -4,8 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
@@ -66,7 +69,10 @@ public class CvsTagPlugin {
 
         // -D option for rtag command.
         // Tag the most recent revision no later than <date> ...
-        String date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(build.getTimestamp().getTime());
+        // JENKINS-
+        DateFormat df = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.FULL, Locale.US);
+        df.setTimeZone(TimeZone.getTimeZone("UTC"));
+        String date = df.format( build.getTimestamp().getTime());
 
         ArgumentListBuilder cmd = new ArgumentListBuilder();
         cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot(), "rtag");
