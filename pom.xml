@@ -7,12 +7,22 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>cvs-tag</artifactId>
-  <name>Hudson CVS Tagging Plug-in</name>
+  <name>Jenkins CVS Tagging Plug-in</name>
   <packaging>hpi</packaging>
   <version>1.6-SNAPSHOT</version>
-  <url>http://wiki.hudson-ci.org/display/HUDSON/CVS+Tagging+Plugin</url>
+  <url>http://wiki.jenkins-ci.org/display/JENKINS/CVS+Tagging+Plugin</url>
 
   <developers>
+      <developer>
+      <id>btrim</id>
+      <name>Brad Trimby</name>
+      <email>trimbybj@gmail.com</email>
+      <organization />
+      <roles>
+        <role>developer</role>
+      </roles>
+      <timezone>-5</timezone>
+    </developer>
     <developer>
       <id>draco2k8</id>
       <name>Brendt Lucas</name>
