@@ -165,32 +165,6 @@ public class CvsTagPlugin {
         return true;
     }
 
-    /**
-     * Converts an array into a delimited String
-     *
-     * @param array     the array to convert
-     * @param delimiter The delimiter used in the String representation
-     * @return a delimited String representation of the array
-     */
-    private static String arrayToString(Object array, String delimiter) {
-        int length = Array.getLength(array);
-
-        if (length == 0) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder(2 * length - 1);
-
-        for (int i = 0; i < length; i++) {
-            if (i > 0) {
-                sb.append(delimiter);
-            }
-
-            sb.append(Array.get(array, i));
-        }
-
-        return sb.toString();
-    }
 
     static String evalGroovyExpression(Map<String, String> env, String expression) {
         Binding binding = new Binding();
