@@ -1,3 +1,26 @@
+/*
+ * The MIT License
+ *
+ * Copyright (c) 2008-2011, Brendt Lucas, Derek Mahar, Bradley Trimby.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package hudson.plugins.cvs_tag;
 
 import java.io.File;
@@ -29,7 +52,7 @@ import org.codehaus.groovy.control.CompilerConfiguration;
  * @author Brendt Lucas
  */
 public class CvsTagPlugin {
-    static final String DESCRIPTION = "Perform CVS tagging on succesful build";
+    static final String DESCRIPTION = "Perform CVS tagging on successful build";
 
     static final String CONFIG_PREFIX = "cvstag.";
 
@@ -70,7 +93,6 @@ public class CvsTagPlugin {
 
         // -D option for rtag command.
         // Tag the most recent revision no later than <date> ...
-        // JENKINS-
         DateFormat df = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.FULL, Locale.US);
         df.setTimeZone(TimeZone.getTimeZone("UTC"));
         String date = df.format( build.getTimestamp().getTime());
