@@ -10,6 +10,11 @@
   <name>Jenkins CVS Tagging Plug-in</name>
   <packaging>hpi</packaging>
   <version>1.6-SNAPSHOT</version>
+  <licenses>
+    <license>
+      <name>MIT</name>
+    </license>
+  </licenses>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/CVS+Tagging+Plugin</url>
 
   <scm>
@@ -50,4 +55,21 @@
       <timezone>-5</timezone>
     </developer>
   </developers>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <version>2.3.2</version>
+	<configuration>
+          <effort>Max</effort>
+          <threshold>Low</threshold>
+          <xmlOutput>true</xmlOutput>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+
+
 </project>
