@@ -37,7 +37,7 @@ import hudson.Launcher;
 import hudson.scm.Messages;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
-import hudson.tasks.Notifier;
+import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -53,8 +53,8 @@ import static hudson.plugins.cvs_tag.CvsTagPlugin.DESCRIPTION;
 /**
  * @author Brendt Lucas
  */
-public class CvsTagPublisher extends Notifier {
-    /**
+public class CvsTagPublisher extends Recorder {
+/**
      * The tag name
      */
     private String tagName;
@@ -146,7 +146,7 @@ public class CvsTagPublisher extends Notifier {
         }
 
         @Override
-        public Publisher newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+        public Recorder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             CvsTagPublisher cvsTagPublisher = new CvsTagPublisher();
             cvsTagPublisher.setTagName(formData.getString("tagName"));
             cvsTagPublisher.setMoveTag(formData.getBoolean("moveTag"));
