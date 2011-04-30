@@ -34,7 +34,7 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.scm.Messages;
+import hudson.scm.cvs.Messages;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Recorder;
@@ -54,7 +54,7 @@ import static hudson.plugins.cvs_tag.CvsTagPlugin.DESCRIPTION;
  * @author Brendt Lucas
  */
 public class CvsTagPublisher extends Recorder {
-/**
+    /**
      * The tag name
      */
     private String tagName;
