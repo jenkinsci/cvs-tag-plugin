@@ -27,7 +27,7 @@
 
   <scm>
     <connection>scm:git:git://github.com/jenkinsci/cvs-tag-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com/jenkinsci/cvs-tag-plugin.git</developerConnection>
+    <developerConnection>scm:git:git@github.com:jenkinsci/cvs-tag-plugin.git</developerConnection>
     <url>http://github.com/jenkinsci/cvs-tag-plugin</url>
   </scm>
 
