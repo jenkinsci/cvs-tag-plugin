@@ -9,7 +9,7 @@
   <artifactId>cvs-tag</artifactId>
   <name>Jenkins CVS Tagging Plug-in</name>
   <packaging>hpi</packaging>
-  <version>1.6</version>
+  <version>1.7-SNAPSHOT</version>
   <licenses>
     <license>
       <name>MIT</name>
