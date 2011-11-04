@@ -23,12 +23,9 @@
  */
 package hudson.plugins.cvs_tag;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.reflect.Array;
 import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
@@ -37,11 +34,9 @@ import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.scm.CVSSCM;
 import hudson.util.ArgumentListBuilder;
@@ -59,14 +54,6 @@ public class CvsTagPlugin {
     private CvsTagPlugin() {
     }
 
-    private static AbstractProject getRootProject(AbstractProject abstractProject) {
-        if (abstractProject.getParent() instanceof Hudson) {
-            return abstractProject;
-        } else {
-            return getRootProject((AbstractProject) abstractProject.getParent());
-        }
-    }
-
 
     public static boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener, String tagName, boolean moveTag) throws IOException, InterruptedException {
         PrintStream logger = listener.getLogger();
@@ -77,7 +64,8 @@ public class CvsTagPlugin {
             return true;
         }
 
-        AbstractProject rootProject = getRootProject(build.getProject());
+        AbstractProject rootProject = build.getProject().getRootProject();
+        AbstractBuild<?,?> rootBuild = build.getRootBuild();
 
         if (!(rootProject.getScm() instanceof CVSSCM)) {
             logger.println("CVS Tag plugin does not support tagging for SCM " + rootProject.getScm() + ".");
@@ -95,7 +83,7 @@ public class CvsTagPlugin {
         // Tag the most recent revision no later than <date> ...
         DateFormat df = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.FULL, Locale.US);
         df.setTimeZone(TimeZone.getTimeZone("UTC"));
-        String date = df.format( build.getTimestamp().getTime());
+        String date = df.format( rootBuild.getTimestamp().getTime());
 
         ArgumentListBuilder cmd = new ArgumentListBuilder();
         cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot());
@@ -130,10 +118,10 @@ public class CvsTagPlugin {
         }
 
         logger.println("Executing tag command: " + cmd.toStringWithQuote());
-        FilePath workingDir = build.getWorkspace();
+        FilePath workingDir = rootBuild.getWorkspace();
         if( branch == null )
         {
-            workingDir = build.getWorkspace().createTempDir("jenkins-cvs-tag","");
+            workingDir = rootBuild.getWorkspace().createTempDir("jenkins-cvs-tag","");
         }
 
         try {
@@ -152,7 +140,7 @@ public class CvsTagPlugin {
             return false;
         } finally {
             try {
-                if ( !workingDir.equals(build.getWorkspace()) )
+                if ( !workingDir.equals(rootBuild.getWorkspace()) )
                 {
                     logger.println("cleaning up " + workingDir);
                     workingDir.deleteRecursive();

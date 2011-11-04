@@ -3,8 +3,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.399</version>
-    <relativePath>../pom.xml</relativePath>
+    <version>1.421</version>
   </parent>
   <artifactId>cvs-tag</artifactId>
   <name>Jenkins CVS Tagging Plug-in</name>
