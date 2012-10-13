@@ -23,30 +23,27 @@
  */
 package hudson.plugins.cvs_tag;
 
-import java.io.IOException;
-import java.util.HashMap;
-
-import javax.servlet.ServletException;
-
-import hudson.tasks.Publisher;
+import hudson.Extension;
+import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.Extension;
-import hudson.Launcher;
-import hudson.scm.cvs.Messages;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
-import org.codehaus.groovy.control.CompilationFailedException;
 import net.sf.json.JSONObject;
-
+import org.codehaus.groovy.control.CompilationFailedException;
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
 
+import javax.servlet.ServletException;
+import java.io.IOException;
+import java.util.HashMap;
+
+import static hudson.Util.fixNull;
 import static hudson.plugins.cvs_tag.CvsTagPlugin.CONFIG_PREFIX;
 import static hudson.plugins.cvs_tag.CvsTagPlugin.DESCRIPTION;
 
@@ -104,7 +101,7 @@ public class CvsTagPublisher extends Recorder {
     }
 
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        return CvsTagPlugin.perform(build, launcher, listener, tagName, moveTag);
+        return CvsTagPlugin.perform(build, listener, tagName, moveTag);
     }
 
     @Override
@@ -166,10 +163,9 @@ public class CvsTagPublisher extends Recorder {
                 }
 
                 if (s != null) {
-                    String errorMessage = isInvalidTag(s);
 
-                    if (errorMessage != null) {
-                        return FormValidation.error(errorMessage);
+                    if (!isValidTag(s)) {
+                        return FormValidation.error("Tag name contains invalid characters");
                     }
                 }
             }
@@ -182,53 +178,25 @@ public class CvsTagPublisher extends Recorder {
          * If it's invalid, this method gives you the reason as string.
          *
          * @param tagName the tag name
-         * @return the error message, or null if tag is valid
+         * @return true if tag name is valid
          */
-        private String isInvalidTag(String tagName) {
-            // source code from CVS rcs.c
-            //void
-            //RCS_check_tag (tag)
-            //    const char *tag;
-            //{
-            //    char *invalid = "$,.:;@";		/* invalid RCS tag characters */
-            //    const char *cp;
-            //
-            //    /*
-            //     * The first character must be an alphabetic letter. The remaining
-            //     * characters cannot be non-visible graphic characters, and must not be
-            //     * in the set of "invalid" RCS identifier characters.
-            //     */
-            //    if (isalpha ((unsigned char) *tag))
-            //    {
-            //    for (cp = tag; *cp; cp++)
-            //    {
-            //        if (!isgraph ((unsigned char) *cp))
-            //        error (1, 0, "tag `%s' has non-visible graphic characters",
-            //               tag);
-            //        if (strchr (invalid, *cp))
-            //        error (1, 0, "tag `%s' must not contain the characters `%s'",
-            //               tag, invalid);
-            //    }
-            //    }
-            //    else
-            //    error (1, 0, "tag `%s' must start with a letter", tag);
-            //}
-            if (tagName == null || tagName.length() == 0) {
-                return Messages.CVSSCM_TagIsEmpty();
+        private boolean isValidTag(String tagName) {
+
+            if (fixNull(tagName).length() == 0) {
+                return false;
             }
 
             char ch = tagName.charAt(0);
             if (!(('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z'))) {
-                return Messages.CVSSCM_TagNeedsToStartWithAlphabet();
+                return false;
             }
 
             for (char invalid : "$,.:;@".toCharArray()) {
                 if (tagName.indexOf(invalid) >= 0) {
-                    return Messages.CVSSCM_TagContainsIllegalChar(invalid);
+                    return false;
                 }
             }
 
-            return null;
-        }
+            return true;        }
     }
 }
