@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2008-2011, Brendt Lucas, Derek Mahar, Bradley Trimby.
+ * Copyright (c) 2008-2012, Brendt Lucas, Derek Mahar, Bradley Trimby, Michael Clarke.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -127,7 +127,7 @@ public class CvsTagPlugin {
         try {
             int exitCode = launcher.launch().cmds(cmd).envs(env).stdout(logger).pwd(workingDir).join();
             if (exitCode != 0) {
-                listener.fatalError(CvsTagPublisher.DESCRIPTOR.getDisplayName() + " failed. exit code=" + exitCode);
+                listener.fatalError(DESCRIPTION + " failed. exit code=" + exitCode);
                 build.setResult(Result.UNSTABLE);
             }
         } catch (IOException e) {

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2008-2011, Brendt Lucas, Derek Mahar, Bradley Trimby.
+ * Copyright (c) 2008-2012, Brendt Lucas, Derek Mahar, Bradley Trimby, Michael Clarke.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,6 +39,7 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.codehaus.groovy.control.CompilationFailedException;
@@ -59,36 +60,28 @@ public class CvsTagPublisher extends Recorder {
      */
     private String tagName;
 
-    protected CvsTagPublisher() {
-        super();    //To change body of overridden methods use File | Settings | File Templates.
-    }
-
     /**
      * Move the tag.
      */
     private boolean moveTag;
 
-    @Extension
-    public static final CvsTagDescriptorImpl DESCRIPTOR = new CvsTagDescriptorImpl();
+    @DataBoundConstructor
+    public CvsTagPublisher(String tagName, boolean moveTag) {
+        super();
+        this.tagName = tagName;
+        this.moveTag = moveTag;
+    }
+
 
     /**
      * @return the tag name
      */
     public String getTagName() {
         if (tagName == null || tagName.length() == 0) {
-            return DESCRIPTOR.getDefaultTagName();
+            return getDescriptor().getDefaultTagName();
         }
 
         return tagName;
-    }
-
-    /**
-     * Set the tag name
-     *
-     * @param tagName the tag name
-     */
-    public void setTagName(String tagName) {
-        this.tagName = tagName;
     }
 
     /**
@@ -100,17 +93,14 @@ public class CvsTagPublisher extends Recorder {
         return moveTag;
     }
 
+    /**
+     *
+     * @return whether CVS should move any existing tag with the same name
+     * @deprecated use #isMoveTag()
+     */
+    @Deprecated
     public boolean getMoveTag() {
         return moveTag;
-    }
-
-    /**
-     * Enable or disable whether the tag should be moved (-F)
-     *
-     * @param moveTag true to move the tag, false otherwise.
-     */
-    public void setMoveTag(boolean moveTag) {
-        this.moveTag = moveTag;
     }
 
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
@@ -127,14 +117,15 @@ public class CvsTagPublisher extends Recorder {
     }
 
     @Override
-    public BuildStepDescriptor<Publisher> getDescriptor() {
-        return DESCRIPTOR;
+    public CvsTagDescriptorImpl getDescriptor() {
+        return (CvsTagDescriptorImpl) super.getDescriptor();
     }
 
+    @Extension
     public static final class CvsTagDescriptorImpl extends BuildStepDescriptor<Publisher> {
         private String defaultTagName;
 
-        private CvsTagDescriptorImpl() {
+        public CvsTagDescriptorImpl() {
             super(CvsTagPublisher.class);
             this.defaultTagName = "${env['JOB_NAME']}-${env['BUILD_NUMBER']}-${new java.text.SimpleDateFormat(\"yyyy_MM_dd\").format(new Date())}";
             load();
@@ -143,15 +134,6 @@ public class CvsTagPublisher extends Recorder {
         @Override
         public String getDisplayName() {
             return DESCRIPTION;
-        }
-
-        @Override
-        public Recorder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            CvsTagPublisher cvsTagPublisher = new CvsTagPublisher();
-            cvsTagPublisher.setTagName(formData.getString("tagName"));
-            cvsTagPublisher.setMoveTag(formData.getBoolean("moveTag"));
-
-            return cvsTagPublisher;
         }
 
         @Override
@@ -169,10 +151,6 @@ public class CvsTagPublisher extends Recorder {
 
         public String getDefaultTagName() {
             return defaultTagName;
-        }
-
-        public void setDefaultTagName(String defaultTagName) {
-            this.defaultTagName = defaultTagName;
         }
 
         public FormValidation doTagNameCheck(@QueryParameter("value") final String tagName) throws IOException, ServletException {
