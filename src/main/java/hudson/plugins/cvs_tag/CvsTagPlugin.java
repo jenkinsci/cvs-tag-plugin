@@ -41,6 +41,7 @@ import org.netbeans.lib.cvsclient.connection.AuthenticationException;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 
@@ -113,8 +114,17 @@ public class CvsTagPlugin {
                 Method performMethod = tagAction.getClass().getMethod("perform", String.class, TaskListener.class);
                 performMethod.invoke(tagName, listener);
                 return true;
-            } catch (ReflectiveOperationException ex) {
+            } catch (InvocationTargetException ex) {
                 logger.println("Could not perform tagging - " + ex.getLocalizedMessage());
+                ex.printStackTrace(logger);
+                return false;
+            } catch (NoSuchMethodException ex) {
+                logger.println("Could not perform tagging - " + ex.getLocalizedMessage());
+                ex.printStackTrace(logger);
+                return false;
+            } catch (IllegalAccessException ex) {
+                logger.println("Could not perform tagging - " + ex.getLocalizedMessage());
+                ex.printStackTrace(logger);
                 return false;
             }
         }
