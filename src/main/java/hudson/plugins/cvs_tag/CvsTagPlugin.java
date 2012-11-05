@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2008-2011, Brendt Lucas, Derek Mahar, Bradley Trimby.
+ * Copyright (c) 2008-2012, Brendt Lucas, Derek Mahar, Bradley Trimby, Michael Clarke.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,24 +23,27 @@
  */
 package hudson.plugins.cvs_tag;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.text.DateFormat;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TimeZone;
-
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
-import hudson.FilePath;
-import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Result;
+import hudson.model.TaskListener;
 import hudson.scm.CVSSCM;
-import hudson.util.ArgumentListBuilder;
+import hudson.scm.CvsRevisionState;
+import hudson.scm.cvstagging.CvsTagAction;
+import hudson.scm.cvstagging.CvsTagActionWorker;
+import hudson.scm.cvstagging.LegacyTagAction;
 import org.codehaus.groovy.control.CompilerConfiguration;
+import org.netbeans.lib.cvsclient.command.CommandException;
+import org.netbeans.lib.cvsclient.connection.AuthenticationException;
+
+import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Map;
 
 
 /**
@@ -55,7 +58,7 @@ public class CvsTagPlugin {
     }
 
 
-    public static boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener, String tagName, boolean moveTag) throws IOException, InterruptedException {
+    public static boolean perform(AbstractBuild<?, ?> build, BuildListener listener, String tagName, boolean moveTag) throws IOException, InterruptedException {
         PrintStream logger = listener.getLogger();
 
         if (!Result.SUCCESS.equals(build.getResult())) {
@@ -65,7 +68,6 @@ public class CvsTagPlugin {
         }
 
         AbstractProject rootProject = build.getProject().getRootProject();
-        AbstractBuild<?,?> rootBuild = build.getRootBuild();
 
         if (!(rootProject.getScm() instanceof CVSSCM)) {
             logger.println("CVS Tag plugin does not support tagging for SCM " + rootProject.getScm() + ".");
@@ -79,82 +81,62 @@ public class CvsTagPlugin {
         Map<String, String> env = build.getEnvironment(listener);
         tagName = evalGroovyExpression(env, tagName);
 
-        // -D option for rtag command.
-        // Tag the most recent revision no later than <date> ...
-        DateFormat df = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.FULL, Locale.US);
-        df.setTimeZone(TimeZone.getTimeZone("UTC"));
-        String date = df.format( rootBuild.getTimestamp().getTime());
 
-        ArgumentListBuilder cmd = new ArgumentListBuilder();
-        cmd.add(scm.getDescriptor().getCvsExeOrDefault(), "-d", scm.getCvsRoot());
+        // attempt to use tag information from CVS V2+
+        CvsRevisionState state = build.getAction(CvsRevisionState.class);
 
-        String branch = scm.getBranch();
-        if ( branch != null)
-        {
-            // cvs -d cvsRoot tag -r branch tagName modules
-            cmd.add("tag");
-            if( moveTag )
-            {
-                cmd.add("-F");
-            }
-            cmd.add("-r",scm.getBranch(), tagName);
-        }
-        else
-        {
-            // cvs -d cvsRoot rtag -D date tagName modules
-            cmd.add("rtag");
-            if( moveTag )
-            {
-                cmd.add("-F");
-            }
-            cmd.add("-D", date, tagName);
-        }
-
-
-        String[] modulesNormalized = scm.getAllModulesNormalized();
-        if( branch == null || scm.isLegacy() || modulesNormalized.length > 1 )
-        {
-            cmd.add(scm.getAllModulesNormalized());
-        }
-
-        logger.println("Executing tag command: " + cmd.toStringWithQuote());
-        FilePath workingDir = rootBuild.getWorkspace();
-        if( branch == null )
-        {
-            workingDir = rootBuild.getWorkspace().createTempDir("jenkins-cvs-tag","");
-        }
-
-        try {
-            int exitCode = launcher.launch().cmds(cmd).envs(env).stdout(logger).pwd(workingDir).join();
-            if (exitCode != 0) {
-                listener.fatalError(CvsTagPublisher.DESCRIPTOR.getDisplayName() + " failed. exit code=" + exitCode);
-                build.setResult(Result.UNSTABLE);
-            }
-        } catch (IOException e) {
-            e.printStackTrace(listener.error(e.getMessage()));
-            logger.println("IOException occurred: " + e);
-            return false;
-        } catch (InterruptedException e) {
-            e.printStackTrace(listener.error(e.getMessage()));
-            logger.println("InterruptedException occurred: " + e);
-            return false;
-        } finally {
+        if (state != null) {
             try {
-                if ( !workingDir.equals(rootBuild.getWorkspace()) )
-                {
-                    logger.println("cleaning up " + workingDir);
-                    workingDir.deleteRecursive();
-                }
-            } catch (IOException e) {
+                new CvsTagActionWorker(state, tagName, true, build, new CvsTagAction(build, scm), moveTag).perform(listener);
+            } catch (CommandException e) {
                 e.printStackTrace(listener.error(e.getMessage()));
+                return false;
+            } catch (AuthenticationException e) {
+                e.printStackTrace(listener.error(e.getMessage()));
+                return false;
+            }
+            return true;
+        }
+
+        // attempt to use tag infomration from CVS V2+, created by older versions
+        LegacyTagAction legacyTagAction = build.getAction(LegacyTagAction.class);
+
+        if (legacyTagAction != null) {
+           legacyTagAction.perform(tagName, moveTag, listener);
+            return true;
+        }
+
+        //attempt to use tag information from versions before CVS v2
+        CVSSCM.TagAction tagAction = build.getAction(CVSSCM.TagAction.class);
+
+        if (tagAction != null) {
+            try {
+                Method performMethod = tagAction.getClass().getMethod("perform", String.class, TaskListener.class);
+                performMethod.invoke(tagName, listener);
+                return true;
+            } catch (InvocationTargetException ex) {
+                logger.println("Could not perform tagging - " + ex.getLocalizedMessage());
+                ex.printStackTrace(logger);
+                return false;
+            } catch (NoSuchMethodException ex) {
+                logger.println("Could not perform tagging - " + ex.getLocalizedMessage());
+                ex.printStackTrace(logger);
+                return false;
+            } catch (IllegalAccessException ex) {
+                logger.println("Could not perform tagging - " + ex.getLocalizedMessage());
+                ex.printStackTrace(logger);
+                return false;
             }
         }
 
-        return true;
+        logger.println("Could not find any tagging information for CVS in this build");
+
+        return false;
+
     }
 
 
-    static String evalGroovyExpression(Map<String, String> env, String expression) {
+    protected static String evalGroovyExpression(Map<String, String> env, String expression) {
         Binding binding = new Binding();
         binding.setVariable("env", env);
         binding.setVariable("sys", System.getProperties());

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2008-2011, Brendt Lucas, Derek Mahar, Bradley Trimby.
+ * Copyright (c) 2008-2012, Brendt Lucas, Derek Mahar, Bradley Trimby, Michael Clarke.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,29 +23,27 @@
  */
 package hudson.plugins.cvs_tag;
 
-import java.io.IOException;
-import java.util.HashMap;
-
-import javax.servlet.ServletException;
-
-import hudson.tasks.Publisher;
+import hudson.Extension;
+import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.Extension;
-import hudson.Launcher;
-import hudson.scm.cvs.Messages;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
-import org.codehaus.groovy.control.CompilationFailedException;
 import net.sf.json.JSONObject;
-
+import org.codehaus.groovy.control.CompilationFailedException;
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
 
+import javax.servlet.ServletException;
+import java.io.IOException;
+import java.util.HashMap;
+
+import static hudson.Util.fixNull;
 import static hudson.plugins.cvs_tag.CvsTagPlugin.CONFIG_PREFIX;
 import static hudson.plugins.cvs_tag.CvsTagPlugin.DESCRIPTION;
 
@@ -59,36 +57,28 @@ public class CvsTagPublisher extends Recorder {
      */
     private String tagName;
 
-    protected CvsTagPublisher() {
-        super();    //To change body of overridden methods use File | Settings | File Templates.
-    }
-
     /**
      * Move the tag.
      */
     private boolean moveTag;
 
-    @Extension
-    public static final CvsTagDescriptorImpl DESCRIPTOR = new CvsTagDescriptorImpl();
+    @DataBoundConstructor
+    public CvsTagPublisher(String tagName, boolean moveTag) {
+        super();
+        this.tagName = tagName;
+        this.moveTag = moveTag;
+    }
+
 
     /**
      * @return the tag name
      */
     public String getTagName() {
         if (tagName == null || tagName.length() == 0) {
-            return DESCRIPTOR.getDefaultTagName();
+            return getDescriptor().getDefaultTagName();
         }
 
         return tagName;
-    }
-
-    /**
-     * Set the tag name
-     *
-     * @param tagName the tag name
-     */
-    public void setTagName(String tagName) {
-        this.tagName = tagName;
     }
 
     /**
@@ -100,21 +90,18 @@ public class CvsTagPublisher extends Recorder {
         return moveTag;
     }
 
+    /**
+     *
+     * @return whether CVS should move any existing tag with the same name
+     * @deprecated use #isMoveTag()
+     */
+    @Deprecated
     public boolean getMoveTag() {
         return moveTag;
     }
 
-    /**
-     * Enable or disable whether the tag should be moved (-F)
-     *
-     * @param moveTag true to move the tag, false otherwise.
-     */
-    public void setMoveTag(boolean moveTag) {
-        this.moveTag = moveTag;
-    }
-
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        return CvsTagPlugin.perform(build, launcher, listener, tagName, moveTag);
+        return CvsTagPlugin.perform(build, listener, tagName, moveTag);
     }
 
     @Override
@@ -127,14 +114,15 @@ public class CvsTagPublisher extends Recorder {
     }
 
     @Override
-    public BuildStepDescriptor<Publisher> getDescriptor() {
-        return DESCRIPTOR;
+    public CvsTagDescriptorImpl getDescriptor() {
+        return (CvsTagDescriptorImpl) super.getDescriptor();
     }
 
+    @Extension
     public static final class CvsTagDescriptorImpl extends BuildStepDescriptor<Publisher> {
         private String defaultTagName;
 
-        private CvsTagDescriptorImpl() {
+        public CvsTagDescriptorImpl() {
             super(CvsTagPublisher.class);
             this.defaultTagName = "${env['JOB_NAME']}-${env['BUILD_NUMBER']}-${new java.text.SimpleDateFormat(\"yyyy_MM_dd\").format(new Date())}";
             load();
@@ -143,15 +131,6 @@ public class CvsTagPublisher extends Recorder {
         @Override
         public String getDisplayName() {
             return DESCRIPTION;
-        }
-
-        @Override
-        public Recorder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            CvsTagPublisher cvsTagPublisher = new CvsTagPublisher();
-            cvsTagPublisher.setTagName(formData.getString("tagName"));
-            cvsTagPublisher.setMoveTag(formData.getBoolean("moveTag"));
-
-            return cvsTagPublisher;
         }
 
         @Override
@@ -171,10 +150,6 @@ public class CvsTagPublisher extends Recorder {
             return defaultTagName;
         }
 
-        public void setDefaultTagName(String defaultTagName) {
-            this.defaultTagName = defaultTagName;
-        }
-
         public FormValidation doTagNameCheck(@QueryParameter("value") final String tagName) throws IOException, ServletException {
             if (tagName == null || tagName.length() == 0) {
                 return FormValidation.error("Please specify a name for this tag.");
@@ -188,10 +163,9 @@ public class CvsTagPublisher extends Recorder {
                 }
 
                 if (s != null) {
-                    String errorMessage = isInvalidTag(s);
 
-                    if (errorMessage != null) {
-                        return FormValidation.error(errorMessage);
+                    if (!isValidTag(s)) {
+                        return FormValidation.error("Tag name contains invalid characters");
                     }
                 }
             }
@@ -204,53 +178,25 @@ public class CvsTagPublisher extends Recorder {
          * If it's invalid, this method gives you the reason as string.
          *
          * @param tagName the tag name
-         * @return the error message, or null if tag is valid
+         * @return true if tag name is valid
          */
-        private String isInvalidTag(String tagName) {
-            // source code from CVS rcs.c
-            //void
-            //RCS_check_tag (tag)
-            //    const char *tag;
-            //{
-            //    char *invalid = "$,.:;@";		/* invalid RCS tag characters */
-            //    const char *cp;
-            //
-            //    /*
-            //     * The first character must be an alphabetic letter. The remaining
-            //     * characters cannot be non-visible graphic characters, and must not be
-            //     * in the set of "invalid" RCS identifier characters.
-            //     */
-            //    if (isalpha ((unsigned char) *tag))
-            //    {
-            //    for (cp = tag; *cp; cp++)
-            //    {
-            //        if (!isgraph ((unsigned char) *cp))
-            //        error (1, 0, "tag `%s' has non-visible graphic characters",
-            //               tag);
-            //        if (strchr (invalid, *cp))
-            //        error (1, 0, "tag `%s' must not contain the characters `%s'",
-            //               tag, invalid);
-            //    }
-            //    }
-            //    else
-            //    error (1, 0, "tag `%s' must start with a letter", tag);
-            //}
-            if (tagName == null || tagName.length() == 0) {
-                return Messages.CVSSCM_TagIsEmpty();
+        private boolean isValidTag(String tagName) {
+
+            if (fixNull(tagName).length() == 0) {
+                return false;
             }
 
             char ch = tagName.charAt(0);
             if (!(('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z'))) {
-                return Messages.CVSSCM_TagNeedsToStartWithAlphabet();
+                return false;
             }
 
             for (char invalid : "$,.:;@".toCharArray()) {
                 if (tagName.indexOf(invalid) >= 0) {
-                    return Messages.CVSSCM_TagContainsIllegalChar(invalid);
+                    return false;
                 }
             }
 
-            return null;
-        }
+            return true;        }
     }
 }
